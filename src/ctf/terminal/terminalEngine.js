@@ -1,13 +1,13 @@
-import { challenges, getChallengeById } from "../data";
-export { bootLogs, createInitialRuntime } from "../runtime";
-import { toolCommands } from "./commandRegistry";
-import { parseCommand } from "./parser";
+import { challenges, getChallengeById } from "../data/index.js";
+export { bootLogs, createInitialRuntime } from "../runtime/index.js";
+import { toolCommands } from "./commandRegistry.js";
+import { parseCommand } from "./parser.js";
 
 const out = (msg, type = "out") => ({ msg, type });
 const sys = (msg) => out(msg, "sys");
 const err = (msg) => out(msg, "err");
 const input = (msg) => out(msg, "in");
-const normalizeFlag = (candidate) => candidate?.replace(/^FLAG\{(.+)\}$/, "$1");
+const normalizeFlag = (candidate) => candidate?.trim().replace(/^FLAG\{(.+)\}$/i, "$1");
 
 const clone = (runtime) => ({
   ...runtime,
@@ -51,6 +51,14 @@ const updateRoomStats = (runtime, roomId, patch) => {
 
 const hasTool = (challenge, command) =>
   !toolCommands.has(command) || challenge.unlocks.includes(command);
+
+const getOptionValue = (args, option) => {
+  const inline = args.find((arg) => arg.startsWith(`${option}=`));
+  if (inline) return inline.slice(option.length + 1);
+
+  const index = args.indexOf(option);
+  return index === -1 ? undefined : args[index + 1];
+};
 
 const evaluateHardening = (state) => {
   const requiredPorts = { 22: "ALLOW", 80: "ALLOW", 443: "ALLOW", 445: "DENY", 4444: "DENY", 5000: "DENY" };
@@ -115,7 +123,7 @@ const submitFlag = (next, logs, challenge, candidate) => {
   return { next, logs };
 };
 
-const handleRemote = (next, logs, challenge, command, args, raw) => {
+const handleRemote = (next, logs, challenge, command, args, raw, canonicalLower) => {
   const session = next.remoteSession;
 
   if (session?.type === "nc") {
@@ -234,13 +242,13 @@ const handleRemote = (next, logs, challenge, command, args, raw) => {
     if (command === "exit") {
       next.remoteSession = null;
       logs.push(sys("splunk@siem closing SIEM session..."));
-    } else if (raw === "search index=ctf | stats count") {
+    } else if (canonicalLower === "search index=ctf | stats count") {
       logs.push(out("auth -> 120 events"));
       logs.push(out("web -> 340 events"));
       logs.push(out("scan_nmap -> 15 events"));
       logs.push(out("gobuster -> 220 events"));
       logs.push(out("endpoint_telemetry -> 3 events"));
-    } else if (raw === "search index=ctf sourcetype=endpoint_telemetry") {
+    } else if (canonicalLower === "search index=ctf sourcetype=endpoint_telemetry") {
       logs.push(out('timestamp=02:14:33 alert="Meterpreter Activity Detected" severity=critical'));
       logs.push(out("src_ip=45.83.122.91 dst_host=WIN-SRV01 user=guest"));
       logs.push(out("payload=windows/x64/meterpreter/reverse_tcp"));
@@ -255,7 +263,7 @@ const handleRemote = (next, logs, challenge, command, args, raw) => {
 };
 
 export const runCommand = (runtime, rawCommand) => {
-  const { raw, args, command } = parseCommand(rawCommand);
+  const { raw, args, command, canonicalLower } = parseCommand(rawCommand);
   const next = clone(runtime);
   const logs = [];
   const challenge = getChallengeById(next.activeRoomId) || challenges[0];
@@ -282,7 +290,7 @@ export const runCommand = (runtime, rawCommand) => {
     return { next, logs };
   }
 
-  if (handleRemote(next, logs, challenge, command, args, raw)) return { next, logs };
+  if (handleRemote(next, logs, challenge, command, args, raw, canonicalLower)) return { next, logs };
 
   if (!hasTool(challenge, command)) {
     logs.push(err(`${command}: tool not available in this room`));
@@ -351,7 +359,8 @@ export const runCommand = (runtime, rawCommand) => {
       logs.push(sys("[!] Vulnerable parameter detected: username"));
     } else logs.push(err("HTTP/1.1 404 Not Found"));
   } else if (command === "sqlmap") {
-    if (raw === "sqlmap http://10.0.2.15/api/login --data='username=admin&password=test'") {
+    const data = getOptionValue(args, "--data");
+    if (args[1] === "http://10.0.2.15/api/login" && data === "username=admin&password=test") {
       logs.push(sys("[*] Starting sqlmap engine..."));
       logs.push(out("[+] Confirmed: Boolean-based SQL injection"));
       logs.push(out("[+] Dump successful"));
@@ -428,10 +437,10 @@ export const runCommand = (runtime, rawCommand) => {
       logs.push(sys(`Firewall configuration: ${score.firewallOk ? "OK" : "INCOMPLETE"}`));
     } else logs.push(err("usage: firewall [status|allow|deny|blockip]"));
   } else if (command === "waf") {
-    if (raw === "waf ratelimit set global 60") {
+    if (canonicalLower === "waf ratelimit set global 60") {
       next.hardening.waf.rateLimitValue = 60;
       logs.push(out("[+] global rate limit set to 60 req/min"));
-    } else if (raw === "waf ruleset enable sqli_basic") {
+    } else if (canonicalLower === "waf ruleset enable sqli_basic") {
       next.hardening.waf.rulesets.sqli_basic = true;
       logs.push(out("[+] ruleset enabled: sqli_basic"));
     } else if (args[1] === "enable") {
@@ -439,22 +448,22 @@ export const runCommand = (runtime, rawCommand) => {
       logs.push(out("[+] WAF enabled"));
     } else logs.push(err("usage: waf [enable|ratelimit|ruleset|status]"));
   } else if (command === "snort") {
-    if (raw === "snort start") {
+    if (canonicalLower === "snort start") {
       next.hardening.snort.enabled = true;
       logs.push(out("[+] Snort engine started"));
-    } else if (raw === "snort interface eth0") {
+    } else if (canonicalLower === "snort interface eth0") {
       next.hardening.snort.interface = "eth0";
       logs.push(out("[+] monitoring interface set to eth0"));
-    } else if (raw === "snort rules enable scan.rules") {
+    } else if (canonicalLower === "snort rules enable scan.rules") {
       next.hardening.snort.rules["scan.rules"] = true;
       logs.push(out("[+] rule enabled: scan.rules"));
-    } else if (raw === "snort rules enable malware.rules") {
+    } else if (canonicalLower === "snort rules enable malware.rules") {
       next.hardening.snort.rules["malware.rules"] = true;
       logs.push(out("[+] rule enabled: malware.rules"));
-    } else if (raw === "snort rules disable local.rules") {
+    } else if (canonicalLower === "snort rules disable local.rules") {
       next.hardening.snort.rules["local.rules"] = false;
       logs.push(out("[+] rule disabled: local.rules"));
-    } else if (raw === "snort threshold scan --rate 10 --window 1 --track src_ip") {
+    } else if (canonicalLower === "snort threshold scan --rate 10 --window 1 --track src_ip") {
       next.hardening.snort.scanPolicy = { count: 10, interval: 1, track: "src_ip" };
       logs.push(out("[+] IDS policy applied"));
     } else logs.push(err("usage: snort [start|interface|rules|threshold]"));

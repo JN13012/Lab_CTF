@@ -1,5 +1,5 @@
-import { domainCatalog, getDomainChallenges } from "../data";
-import { getRoomStatus } from "./roomSelectors";
+import { domainCatalog, getDomainChallenges } from "../data/index.js";
+import { getRoomStatus } from "./roomSelectors.js";
 
 export function getDomainStats(runtime, domain) {
   const rooms = getDomainChallenges(domain);

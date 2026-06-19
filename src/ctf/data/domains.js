@@ -1,9 +1,9 @@
 export const domainCatalog = [
   {
     id: "recon",
-    title: "Network Reconnaissance",
+    title: "Fondations CTF",
     description:
-      "Gather intelligence on a target, inspect exposed files and probe network services.",
+      "Observer l'environnement, fouiller les fichiers et scanner les premiers services exposes.",
     challengeIds: ["footprinting", "linux-commands", "service-scanning"],
   },
   {

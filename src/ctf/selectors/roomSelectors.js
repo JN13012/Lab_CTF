@@ -1,3 +1,5 @@
+import { challenges } from "../data/index.js";
+
 export const trainingModes = [
   {
     id: "guided",
@@ -12,8 +14,15 @@ export const trainingModes = [
 ];
 
 export function getRoomStatus(runtime, challenge) {
+  if (!challenge) return "locked";
   if (runtime.completedRooms?.includes(challenge.id)) return "completed";
-  return "available";
+
+  const previousRooms = challenges.filter((room) => room.order < challenge.order);
+  const previousRoomsCompleted = previousRooms.every((room) =>
+    runtime.completedRooms?.includes(room.id),
+  );
+
+  return challenge.order === 1 || previousRoomsCompleted ? "available" : "locked";
 }
 
 export function getMethodology(room) {

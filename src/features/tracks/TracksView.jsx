@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   CircleDot,
   Database,
+  Lock,
   FlaskConical,
   Network,
   Radar,
@@ -99,6 +100,8 @@ export function TracksView({ runtime, selectedDomainId, searchQuery, onSelectDom
                     className="size-full object-cover"
                     src={domainImages[domain.id] || genericLabImage}
                     alt=""
+              loading="lazy"
+              decoding="async"
                   />
                 </div>
                 <div className="grid size-12 place-items-center rounded-lg border border-[#00b8d9]/30 bg-[#00b8d9]/10 text-[#00b8d9]">
@@ -131,13 +134,14 @@ export function TracksView({ runtime, selectedDomainId, searchQuery, onSelectDom
                 <div className="grid gap-2 border-t border-[#314255] bg-[#080d13] p-3">
                   {visibleRooms.map((room) => {
                     const status = getRoomStatus(runtime, room);
-                    const StatusIcon = status === "completed" ? CheckCircle2 : CircleDot;
+                    const StatusIcon = status === "completed" ? CheckCircle2 : status === "locked" ? Lock : CircleDot;
 
                     return (
                       <button
                         key={room.id}
                         type="button"
-                        className="grid min-h-16 grid-cols-[48px_minmax(0,1fr)_auto_auto_auto] items-center gap-3 rounded-lg border border-[#314255] bg-[#101826] p-3 text-left transition hover:border-[#40566f] hover:bg-[#1a2433]"
+                        className="grid min-h-16 grid-cols-[48px_minmax(0,1fr)_auto_auto_auto] items-center gap-3 rounded-lg border border-[#314255] bg-[#101826] p-3 text-left transition hover:border-[#40566f] hover:bg-[#1a2433] disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={status === "locked"}
                         onClick={() => onOpenRoom(room.order, "guided", "tracks")}
                       >
                         <div className="relative size-12 overflow-hidden rounded-lg border border-[#314255]">
@@ -145,6 +149,8 @@ export function TracksView({ runtime, selectedDomainId, searchQuery, onSelectDom
                             className="size-full object-cover"
                             src={roomImages[room.id] || genericLabImage}
                             alt=""
+              loading="lazy"
+              decoding="async"
                           />
                           <StatusIcon className="absolute bottom-1 right-1 text-[#00b8d9]" size={16} />
                         </div>

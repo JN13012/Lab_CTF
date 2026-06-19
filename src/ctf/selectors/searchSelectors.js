@@ -1,5 +1,5 @@
-import { getDomainChallenges, getStandaloneRoom } from "../data";
-import { getDomainForRoom } from "./domainSelectors";
+import { getDomainChallenges, getStandaloneRoom } from "../data/index.js";
+import { getDomainForRoom } from "./domainSelectors.js";
 
 export const normalize = (value) => value.toLowerCase().trim();
 

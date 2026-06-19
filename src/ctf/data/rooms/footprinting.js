@@ -1,7 +1,7 @@
 export const footprinting = {
   id: "footprinting",
   order: 1,
-  title: "Footprinting",
+  title: "Premiers Indices",
   category: "Recon",
   difficulty: "Intro",
   flag: "Welcome_User",

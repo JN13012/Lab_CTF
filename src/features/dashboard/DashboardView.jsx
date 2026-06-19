@@ -29,9 +29,13 @@ export function DashboardView({
   onOpenRoom,
 }) {
   const activeRoom = getChallengeById(runtime.activeRoomId) || challenges[0];
+  const activeRoomStatus = getRoomStatus(runtime, activeRoom);
+  const firstAvailableRoom =
+    challenges.find((room) => getRoomStatus(runtime, room) === "available") || activeRoom;
   const currentRoom =
-    runtime.completedRooms?.includes(activeRoom.id)
-      ? challenges.find((room) => getRoomStatus(runtime, room) === "available") || activeRoom
+    !runtime.solved &&
+    (runtime.completedRooms?.includes(activeRoom.id) || activeRoomStatus === "locked")
+      ? firstAvailableRoom
       : activeRoom;
   const currentDomain = getDomainForRoom(currentRoom);
   const globalProgress = Math.round((completedCount / challenges.length) * 100);
@@ -93,6 +97,8 @@ export function DashboardView({
             <img
               src={domainImages[selectedDomain.id] || genericLabImage}
               alt=""
+              loading="lazy"
+              decoding="async"
             />
           </div>
           <div className="program-copy">
@@ -129,6 +135,8 @@ export function DashboardView({
                   <img
                     src={roomImages[room.id] || genericLabImage}
                     alt=""
+              loading="lazy"
+              decoding="async"
                   />
                 </div>
                 <div>

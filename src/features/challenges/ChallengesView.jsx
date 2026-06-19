@@ -82,6 +82,8 @@ export function ChallengesView({ runtime, searchQuery, onOpenRoom }) {
                   className="size-full object-cover"
                   src={room ? roomImages[room.id] || genericLabImage : genericLabImage}
                   alt=""
+              loading="lazy"
+              decoding="async"
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_38%,rgba(0,0,0,0.62))]" />
               </div>

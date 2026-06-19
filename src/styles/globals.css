@@ -622,4 +622,47 @@
       justify-self: start;
     }
   }
+
+  @media (max-width: 720px) {
+    .content-shell {
+      padding: 16px;
+    }
+
+    .app-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .header-actions {
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      width: 100%;
+      flex: 1 1 100%;
+    }
+
+    .header-actions > .button {
+      flex: 1 1 auto;
+    }
+
+    .sidebar-shell {
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .brand-title {
+      font-size: 14px;
+    }
+
+    .page-title {
+      font-size: 24px;
+    }
+
+    .hero-title {
+      font-size: 25px;
+    }
+  }
+
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { runCommand } from "./ctf/terminal/terminalEngine";
 import { bootLogs, createInitialRuntime } from "./ctf/runtime";
 import {
@@ -10,9 +10,10 @@ import {
 import {
   getCurrentRoomStats,
   getDomainForRoom,
+  getRoomStatus,
 } from "./ctf/selectors";
 import { labLogo } from "./assets/images";
-import { clearSavedState, loadSavedState, saveState } from "./app/storage";
+import { capLogs, clearSavedState, loadSavedState, saveState } from "./app/storage";
 import { AppHeader } from "./components/layout/AppHeader";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Toast } from "./components/layout/Toast";
@@ -55,6 +56,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [returnView, setReturnView] = useState("dashboard");
   const [toast, setToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
 
   const activeRoom = getChallengeById(runtime.activeRoomId) || challenges[0];
   const activeRoomStats = getCurrentRoomStats(runtime, activeRoom.id);
@@ -89,17 +91,22 @@ function App() {
     saveState({ runtime, logs });
   }, [runtime, logs]);
 
+  useEffect(() => () => {
+    if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+  }, []);
+
   const appendLogs = (newLogs) => {
     if (newLogs.some((log) => log.msg === "__CLEAR__")) {
       setLogs(bootLogs);
       return;
     }
-    setLogs((current) => [...current, ...newLogs]);
+    setLogs((current) => capLogs([...current, ...newLogs]));
   };
 
   const showToast = (message, type = "info") => {
+    if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
     setToast({ message, type });
-    window.setTimeout(() => setToast(null), 1800);
+    toastTimeoutRef.current = window.setTimeout(() => setToast(null), 1800);
   };
 
   const openTrack = (domainId) => {
@@ -115,6 +122,11 @@ function App() {
   const openRoom = (order, mode = "guided", backTarget = mode === "challenge" ? "challenges" : "track") => {
     const room = getChallengeByOrder(order);
     if (!room) return;
+
+    if (getRoomStatus(runtime, room) === "locked") {
+      showToast("Complete previous rooms to unlock this room.");
+      return;
+    }
 
     const domain = getDomainForRoom(room);
     showToast(`Preparing room: ${room.title}...`);
@@ -148,20 +160,20 @@ function App() {
 
     setVmState("booting");
     showToast("Allocating target resources...");
-    setLogs((current) => [
+    setLogs((current) => capLogs([
       ...current,
       { msg: "[*] allocating target resources...", type: "sys" },
       { msg: `[*] loading image: ${activeRoom.id}`, type: "sys" },
-    ]);
+    ]));
 
     window.setTimeout(() => {
       showToast(`Target ready: ${activeRoom.targetIp || "local-sim"}`, "success");
       setVmState("running");
-      setLogs((current) => [
+      setLogs((current) => capLogs([
         ...current,
         { msg: `[+] VM ready: ${activeRoom.targetIp || "local-sim"}`, type: "sys" },
         { msg: "TYPE 'help' TO START THE CHALLENGE.", type: "sys" },
-      ]);
+      ]));
     }, 1200);
   };
 

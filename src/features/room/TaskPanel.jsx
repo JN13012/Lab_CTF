@@ -28,6 +28,8 @@ export function TaskPanel({
             className="size-full object-cover"
             src={roomImages[room.id] || genericLabImage}
             alt=""
+              loading="lazy"
+              decoding="async"
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_35%,rgba(0,0,0,0.72))]" />
         </div>

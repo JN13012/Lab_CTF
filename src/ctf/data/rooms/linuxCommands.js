@@ -1,7 +1,7 @@
 export const linuxCommands = {
   id: "linux-commands",
   order: 2,
-  title: "Linux Commands",
+  title: "Fouille Linux",
   category: "Linux",
   difficulty: "Easy",
   flag: "Grep_Is_Magic",

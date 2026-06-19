@@ -1,7 +1,7 @@
 export const serviceScanning = {
   id: "service-scanning",
   order: 3,
-  title: "Service Scanning",
+  title: "Scan de Services",
   category: "Network",
   difficulty: "Easy",
   flag: "TRY_HARD",

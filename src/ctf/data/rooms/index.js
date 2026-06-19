@@ -1,12 +1,12 @@
-import { bruteforce } from "./bruteforce";
-import { footprinting } from "./footprinting";
-import { forensic } from "./forensic";
-import { hardening } from "./hardening";
-import { linuxCommands } from "./linuxCommands";
-import { metasploit } from "./metasploit";
-import { serviceScanning } from "./serviceScanning";
-import { siem } from "./siem";
-import { webSqli } from "./webSqli";
+import { bruteforce } from "./bruteforce.js";
+import { footprinting } from "./footprinting.js";
+import { forensic } from "./forensic.js";
+import { hardening } from "./hardening.js";
+import { linuxCommands } from "./linuxCommands.js";
+import { metasploit } from "./metasploit.js";
+import { serviceScanning } from "./serviceScanning.js";
+import { siem } from "./siem.js";
+import { webSqli } from "./webSqli.js";
 
 export const challenges = [
   footprinting,

@@ -29,7 +29,7 @@ export function TerminalView({
 
   return (
     <section
-      className="flex min-h-[640px] min-w-0 flex-col overflow-hidden rounded-lg border border-[#314255] bg-[#080d13] shadow-[0_18px_48px_rgba(0,0,0,0.28)]"
+      className="flex min-h-[420px] min-w-0 flex-col overflow-hidden rounded-lg border border-[#314255] bg-[#080d13] shadow-[0_18px_48px_rgba(0,0,0,0.28)] md:min-h-[640px]"
       onClick={() => inputRef.current?.focus()}
     >
       <header className="flex min-h-11 items-center justify-between border-b border-[#314255] bg-[#101826] px-3.5">
@@ -57,6 +57,7 @@ export function TerminalView({
             disabled={disabled}
             onClick={() => onUseSuggestion?.(suggestion)}
             title={suggestion}
+            aria-label={`Use suggested command: ${suggestion}`}
           >
             {suggestion}
           </button>

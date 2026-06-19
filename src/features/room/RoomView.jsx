@@ -42,6 +42,7 @@ export function RoomView({
           className="absolute inset-0 size-full object-cover opacity-45"
           src={roomImage}
           alt=""
+          decoding="async"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,#101826_0%,rgba(16,24,38,0.86)_44%,rgba(16,24,38,0.58)_100%),linear-gradient(180deg,transparent_35%,rgba(0,0,0,0.42))]" />
         <div className="relative z-10 flex min-w-0 flex-col justify-end p-5">

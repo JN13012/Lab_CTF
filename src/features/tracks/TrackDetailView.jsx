@@ -34,6 +34,8 @@ export function TrackDetailView({ runtime, domainId, searchQuery, onBack, onOpen
             className="absolute inset-0 size-full object-cover"
             src={domainImages[domain.id] || genericLabImage}
             alt=""
+              loading="lazy"
+              decoding="async"
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_35%,rgba(0,0,0,0.68))]" />
           <div className="absolute bottom-4 left-4 grid size-16 place-items-center rounded-lg border border-[#00b8d9]/30 bg-[#00b8d9]/10 text-[#00b8d9] backdrop-blur">
@@ -83,6 +85,8 @@ export function TrackDetailView({ runtime, domainId, searchQuery, onBack, onOpen
                     className="size-full object-cover"
                     src={roomImages[room.id] || genericLabImage}
                     alt=""
+              loading="lazy"
+              decoding="async"
                   />
                   <StatusIcon className="absolute bottom-1 right-1 text-[#00b8d9]" size={16} />
                 </div>
