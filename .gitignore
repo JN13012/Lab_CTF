@@ -1,5 +1,26 @@
+# Dependencies and build
 node_modules
 dist
+coverage
+
+# Secrets: only a template is committed
 .env
-.env.local
+.env.*
+!.env.example
+
+# Logs
+*.log
 npm-debug.log*
+
+# Claude Code local config
+.claude/
+
+# Windows / WSL artifacts
+*:Zone.Identifier
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/

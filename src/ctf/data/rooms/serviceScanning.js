@@ -1,17 +1,17 @@
 export const serviceScanning = {
   id: "service-scanning",
   order: 3,
-  title: "Scan de Services",
+  title: "Service Scanning",
   category: "Network",
   difficulty: "Easy",
   flag: "TRY_HARD",
   unlocks: ["nmap", "nc"],
   targetIp: "10.0.2.15",
   objective:
-    "Scanner la cible, identifier les services exposés et exploiter le service debug.",
+    "Scan the target, identify exposed services and abuse the debug service.",
   scenario:
-    "Une VM d'entraînement expose plusieurs services. Un service Flask semble mal configuré.",
-  hint: "Lance nmap -sV 10.0.2.15 puis connecte-toi au port Flask avec nc.",
+    "A training VM exposes several services. One Flask service looks misconfigured.",
+  hint: "Run nmap -sV 10.0.2.15, then connect to the Flask port with nc.",
   files: {
     "readme.txt":
       "You are acting as a penetration tester. Enumerate exposed services on the target host.",

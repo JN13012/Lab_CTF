@@ -8,11 +8,11 @@ export const webSqli = {
   unlocks: ["gobuster", "curl", "sqlmap"],
   targetIp: "10.0.2.15",
   objective:
-    "Enumérer l'API, identifier un paramètre vulnérable et confirmer une SQL injection.",
+    "Enumerate the API, identify a vulnerable parameter and confirm a SQL injection.",
   scenario:
-    "Le service Flask trouvé précédemment expose une API interne. Les endpoints ne sont pas tous documentés.",
+    "The Flask service found earlier exposes an internal API. Not every endpoint is documented.",
   hint:
-    "Utilise gobuster 10.0.2.15, inspecte /api/login avec curl, puis sqlmap avec le bon POST data.",
+    "Run gobuster 10.0.2.15, inspect /api/login with curl, then sqlmap with the right POST data.",
   directories: ["/backup", "/dev_admin_portal", "/api/login", "/api/users"],
   files: {
     "readme.txt":

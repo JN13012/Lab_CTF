@@ -1,10 +1,10 @@
-import { ArrowLeft } from "lucide-react";
-import { genericLabImage, roomImages } from "../../assets/images";
+import { ArrowLeft, Boxes, ChevronRight, ListChecks, Trophy } from "lucide-react";
 import { TerminalView } from "../../components/terminal/TerminalView";
-import { difficultyClass } from "../../components/ui/DifficultyBadge";
+import { difficultyClass, difficultyLabel } from "../../components/ui/DifficultyBadge";
 import { StatusBadge } from "../../components/ui/StatusBadge";
-import { TagChip } from "../../components/ui/TagChip";
-import { getDomainForRoom, getRoomStatus } from "../../ctf/selectors";
+import { moduleColors, moduleIcons } from "../../components/ui/themeIcons";
+import { getModuleForRoom, getModuleNumber, levels } from "../../ctf/data";
+import { getRoomPoints, getRoomStatus, getRoomTaskProgress, getRoomTasks } from "../../ctf/selectors";
 import { getSuggestedCommands } from "./commandSuggestions";
 import { TaskPanel } from "./TaskPanel";
 import { VmPanel } from "./VmPanel";
@@ -18,100 +18,120 @@ export function RoomView({
   vmState,
   roomStats,
   note,
-  trainingMode,
-  completedCount,
   onBack,
   onBoot,
-  onTrainingModeChange,
+  onStopVm,
   onRevealHint,
   onNotesChange,
   onCommandChange,
   onCommandSubmit,
-  onClearLogs,
-  onReset,
+  onAnswerQuestion,
 }) {
-  const domain = getDomainForRoom(room);
-  const roomImage = roomImages[room.id] || genericLabImage;
+  const module = getModuleForRoom(room.id);
+  const level = levels.find((item) => item.id === module?.levelId);
+  const moduleNumber = getModuleNumber(module);
+  const roomNumber = (module?.roomIds.indexOf(room.id) ?? -1) + 1;
   const roomStatus = getRoomStatus(runtime, room);
-  const suggestedCommands = getSuggestedCommands(room, trainingMode);
+  const progress = getRoomTaskProgress(runtime, room);
+  const taskCount = getRoomTasks(room).length;
+  const suggestedCommands = getSuggestedCommands(room);
+  const Icon = moduleIcons[module?.id] || Boxes;
+  const color = moduleColors[module?.id] || "var(--accent)";
 
   return (
-    <section className="grid gap-4">
-      <div className="relative grid min-h-[230px] overflow-hidden rounded-lg border border-[#314255] bg-[#101826] shadow-[0_18px_48px_rgba(0,0,0,0.28)] lg:grid-cols-[minmax(0,1fr)_220px]">
-        <img
-          className="absolute inset-0 size-full object-cover opacity-45"
-          src={roomImage}
-          alt=""
-          decoding="async"
+    <section className="grid gap-5">
+      <div className="hud relative overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] panel p-6">
+        <div
+          className="pointer-events-none absolute -right-20 -top-28 size-80 rounded-full blur-3xl"
+          style={{ background: `color-mix(in srgb, ${color} 14%, transparent)` }}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#101826_0%,rgba(16,24,38,0.86)_44%,rgba(16,24,38,0.58)_100%),linear-gradient(180deg,transparent_35%,rgba(0,0,0,0.42))]" />
-        <div className="relative z-10 flex min-w-0 flex-col justify-end p-5">
-          <button
-            type="button"
-            className="mb-8 inline-flex min-h-9 w-fit items-center gap-2 rounded-lg border border-[#314255] bg-[#101826] px-3 text-sm font-semibold text-[#e7edf5] transition hover:border-[#40566f] hover:bg-[#1a2433]"
-            onClick={onBack}
-          >
-            <ArrowLeft size={17} />
-            Back
-          </button>
-          <span className="block text-xs font-semibold uppercase tracking-normal text-[#9fb0c4]">
-            Room workspace
-          </span>
-          <h2 className="m-0 mt-1 text-3xl font-semibold leading-tight text-[#e7edf5]">
-            {room.title}
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#c9d5e3]">
-            {room.objective}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className={difficultyClass[room.difficulty]}>{room.difficulty}</span>
-            <TagChip>{domain?.title || room.category}</TagChip>
-            <StatusBadge status={roomStatus} />
-            <StatusBadge status={vmState}>VM {vmState}</StatusBadge>
-            <TagChip>{trainingMode === "challenge" ? "Challenge mode" : "Guided mode"}</TagChip>
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)]">
+            <button type="button" className="inline-flex items-center gap-1 hover:text-[var(--accent)]" onClick={onBack}>
+              <ArrowLeft size={14} />
+              Back
+            </button>
+            <span className="text-[var(--text-faint)]">|</span>
+            <span>{level?.title}</span>
+            <ChevronRight size={13} className="text-[var(--text-faint)]" />
+            <span className="text-[var(--text-body)]">
+              Module {moduleNumber}: {module?.title}
+            </span>
+            <ChevronRight size={13} className="text-[var(--text-faint)]" />
+            <span>
+              Room {roomNumber} of {module?.roomIds.length}
+            </span>
           </div>
-        </div>
-        <div className="relative z-10 grid gap-3 border-t border-[#314255] bg-[#080d13]/70 p-4 backdrop-blur lg:border-l lg:border-t-0">
-          <div className="rounded-lg border border-[#314255] bg-[#101826]/80 p-3">
-            <span className="block text-xs font-semibold uppercase text-[#9fb0c4]">Target</span>
-            <strong className="mt-1 block text-[#e7edf5]">{room.targetIp || "local-sim"}</strong>
-          </div>
-          <div className="rounded-lg border border-[#314255] bg-[#101826]/80 p-3">
-            <span className="block text-xs font-semibold uppercase text-[#9fb0c4]">Hints</span>
-            <strong className="mt-1 block text-[#e7edf5]">{roomStats.hints}</strong>
-          </div>
-          <div className="rounded-lg border border-[#314255] bg-[#101826]/80 p-3">
-            <span className="block text-xs font-semibold uppercase text-[#9fb0c4]">Attempts</span>
-            <strong className="mt-1 block text-[#e7edf5]">{roomStats.flagAttempts}</strong>
+
+          <div className="mt-5 flex flex-wrap items-end gap-6">
+            <div className="flex min-w-0 flex-1 items-start gap-5">
+              <span
+                className="grid size-16 shrink-0 place-items-center rounded-xl border"
+                style={{
+                  color,
+                  borderColor: `color-mix(in srgb, ${color} 35%, transparent)`,
+                  background: `color-mix(in srgb, ${color} 12%, transparent)`,
+                }}
+              >
+                <Icon size={30} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="m-0 text-3xl font-bold tracking-tight text-[var(--text)]">{room.title}</h2>
+                <p className="m-0 mt-2 max-w-3xl text-[15px] leading-relaxed text-[var(--text-body)]">{room.objective}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className={difficultyClass[room.difficulty]}>{difficultyLabel[room.difficulty]}</span>
+                  <span className="chip">
+                    <ListChecks size={12} />
+                    {taskCount} tasks
+                  </span>
+                  <span className="chip">
+                    <Trophy size={12} />
+                    {getRoomPoints(room)} pts
+                  </span>
+                  <StatusBadge status={roomStatus} />
+                </div>
+              </div>
+            </div>
+            <div className="w-full max-w-xs">
+              <div className="mb-1.5 flex justify-between text-xs font-semibold text-[var(--text-muted)]">
+                <span>
+                  {progress.answered} of {progress.total} questions answered
+                </span>
+                <span className="text-[var(--accent)]">{progress.percent}%</span>
+              </div>
+              <div className="progress-bar">
+                <span style={{ width: `${progress.percent}%` }} />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[320px_minmax(0,1fr)_260px]">
+      <VmPanel room={room} vmState={vmState} onBoot={onBoot} onStop={onStopVm} />
+
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <TaskPanel
           room={room}
           runtime={runtime}
+          vmState={vmState}
           roomStats={roomStats}
           note={note}
-          trainingMode={trainingMode}
-          completedCount={completedCount}
-          onTrainingModeChange={onTrainingModeChange}
           onRevealHint={onRevealHint}
           onNotesChange={onNotesChange}
-          onClearLogs={onClearLogs}
-          onReset={onReset}
+          onAnswerQuestion={onAnswerQuestion}
         />
-        <TerminalView
-          logs={logs}
-          value={command}
-          onChange={onCommandChange}
-          onSubmit={onCommandSubmit}
-          disabled={vmState !== "running"}
-          prompt={prompt}
-          suggestions={suggestedCommands}
-          onUseSuggestion={onCommandChange}
-        />
-        <VmPanel room={room} vmState={vmState} onBoot={onBoot} />
+        <div className="order-first xl:sticky xl:top-[88px] xl:order-none">
+          <TerminalView
+            logs={logs}
+            value={command}
+            onChange={onCommandChange}
+            onSubmit={onCommandSubmit}
+            disabled={vmState !== "running"}
+            prompt={prompt}
+            suggestions={suggestedCommands}
+            onUseSuggestion={onCommandChange}
+          />
+        </div>
       </div>
     </section>
   );

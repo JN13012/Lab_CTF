@@ -1,17 +1,17 @@
 export const footprinting = {
   id: "footprinting",
   order: 1,
-  title: "Premiers Indices",
+  title: "First Clues",
   category: "Recon",
   difficulty: "Intro",
   flag: "Welcome_User",
   unlocks: [],
   objective:
-    "Commencer l'investigation. Le premier flag se trouve dans la surface visible du site.",
+    "Start the investigation. The first flag is hidden in the visible surface of the site.",
   scenario:
-    "Bienvenue dans le Cyber Training Lab. Tu demarres comme analyste junior et tu dois apprendre a lire les indices laisses dans l'environnement.",
+    "Welcome to Cyber Training Lab. You start as a junior analyst and learn to read the clues left in the environment.",
   hint:
-    "Inspecte la source de la page, ou simule-le ici avec les fichiers cachés. Essaie ls -la puis cat .flag.txt.",
+    "Inspect the page source, simulated here with hidden files. Try ls -la, then cat .flag.txt.",
   files: {
     "readme.txt":
       "Welcome user. Search, find, and validate. Exit any session before submit flag.",

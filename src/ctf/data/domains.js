@@ -1,51 +1,32 @@
-export const domainCatalog = [
+export const domains = [
   {
-    id: "recon",
-    title: "Fondations CTF",
-    description:
-      "Observer l'environnement, fouiller les fichiers et scanner les premiers services exposes.",
-    challengeIds: ["footprinting", "linux-commands", "service-scanning"],
+    id: "cyber",
+    title: "Cyber Security",
+    tagline: "Offensive and defensive security labs",
+    accent: "#9fef00",
+    available: true,
+    grades: ["Recruit", "Operator", "Specialist", "Elite"],
   },
   {
-    id: "web",
-    title: "Web Application Security",
-    description:
-      "Map hidden endpoints, inspect API behavior and exploit web application weaknesses.",
-    challengeIds: ["web-sqli"],
+    // Curriculum is published but its rooms are still being authored.
+    id: "ai",
+    title: "AI Engineering",
+    tagline: "Machine learning, LLM apps and agents",
+    accent: "#a970ff",
+    available: true,
+    preview: true,
+    grades: ["Apprentice", "Builder", "Engineer", "Architect"],
   },
   {
-    id: "cracking",
-    title: "Password Attacks",
-    description:
-      "Recover credentials through wordlists, SSH pivoting and GPU-style mask attacks.",
-    challengeIds: ["bruteforce"],
-  },
-  {
-    id: "exploitation",
-    title: "System Exploitation",
-    description:
-      "Use exploitation frameworks, open sessions and escalate privileges on target systems.",
-    challengeIds: ["metasploit"],
-  },
-  {
-    id: "soc",
-    title: "SOC & SIEM Analysis",
-    description:
-      "Correlate logs, identify attacker infrastructure and reconstruct attack chains.",
-    challengeIds: ["siem"],
-  },
-  {
-    id: "forensic",
-    title: "Forensic Response",
-    description:
-      "Analyze suspicious artifacts, map network connections and contain persistence.",
-    challengeIds: ["forensic"],
-  },
-  {
-    id: "hardening",
-    title: "Infrastructure Hardening",
-    description:
-      "Reduce exposed services, configure WAF controls and deploy IDS detection policy.",
-    challengeIds: ["hardening"],
+    id: "quant",
+    title: "Quant Trading",
+    tagline: "Strategies, backtesting and paper trading",
+    accent: "#f5b942",
+    available: false,
   },
 ];
+
+export const defaultDomainId = "cyber";
+
+export const getDomainById = (id) =>
+  domains.find((domain) => domain.id === id) || domains.find((domain) => domain.id === defaultDomainId);

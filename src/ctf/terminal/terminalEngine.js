@@ -20,9 +20,6 @@ const clone = (runtime) => ({
     ]),
   ),
   notes: { ...(runtime.notes || {}) },
-  trainingMode: ["guided", "challenge"].includes(runtime.trainingMode)
-    ? runtime.trainingMode
-    : "guided",
   crackedPasswords: { ...runtime.crackedPasswords },
   msf: { module: runtime.msf.module, options: { ...runtime.msf.options } },
   meterpreter: { ...runtime.meterpreter },
@@ -298,19 +295,12 @@ export const runCommand = (runtime, rawCommand) => {
   }
 
   if (command === "help") {
-    const baseCommands =
-      next.trainingMode === "challenge"
-        ? ["ls", "ls -la", "cat [file]", "submit [flag]", "clear"]
-        : ["ls", "ls -la", "cat [file]", "hint", "submit [flag]", "clear"];
+    const baseCommands = ["ls", "ls -la", "cat [file]", "hint", "submit [flag]", "clear"];
     const unlocked = [...baseCommands, ...challenge.unlocks];
     logs.push(sys(`AVAILABLE COMMANDS: ${unlocked.join(", ")}`));
   } else if (command === "clear") {
     logs.push({ msg: "__CLEAR__", type: "control" });
   } else if (command === "hint") {
-    if (next.trainingMode === "challenge") {
-      logs.push(err("hint: disabled in challenge mode"));
-      return { next, logs };
-    }
     updateRoomStats(next, challenge.id, (current) => ({
       hints: (current.hints || 0) + 1,
     }));

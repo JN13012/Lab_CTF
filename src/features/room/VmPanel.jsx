@@ -1,74 +1,59 @@
-import { Clock, Cpu, Database, Network, Play, Server } from "lucide-react";
+import { Loader2, Play, Server, Square } from "lucide-react";
 
-export function VmPanel({ room, vmState, onBoot }) {
-  const surface =
-    room.services?.length || room.directories?.length || Object.keys(room.files).length;
-  const exposedServices = room.services?.length || 0;
-  const artifacts = Object.keys(room.files).length + (room.directories?.length || 0);
+const stateLabel = {
+  stopped: "Offline",
+  booting: "Starting",
+  running: "Online",
+};
+
+export function VmPanel({ room, vmState, onBoot, onStop }) {
+  const isRunning = vmState === "running";
+  const isBooting = vmState === "booting";
+  const dotColor = isRunning ? "var(--success)" : isBooting ? "var(--warning)" : "var(--text-faint)";
 
   return (
-    <aside className="grid gap-4">
-      <section className="rounded-lg border border-[#314255] bg-[#101826] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-        <div
-          className={`mb-3 size-3 rounded-full ${
-            vmState === "running"
-              ? "bg-[#00d97e] shadow-[0_0_18px_rgba(0,217,126,0.45)]"
-              : vmState === "booting"
-                ? "bg-[#facc15] shadow-[0_0_18px_rgba(250,204,21,0.45)]"
-                : "bg-[#ff3b5c] shadow-[0_0_18px_rgba(255,59,92,0.35)]"
-          }`}
-        />
-        <span className="block text-xs font-semibold uppercase tracking-normal text-[#9fb0c4]">
-          Target VM
-        </span>
-        <h2 className="m-0 mt-1 text-xl font-semibold text-[#e7edf5]">
-          {room.id.replaceAll("-", "_")}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-[#9fb0c4]">
-          {vmState === "running"
-            ? "Target VM is online and ready for interaction."
-            : vmState === "booting"
-              ? "Provisioning target environment."
-              : "Start the VM to unlock the terminal."}
-        </p>
-        <button
-          type="button"
-          className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#00b8d9]/60 bg-[linear-gradient(135deg,#00b8d9,#4aa3ff)] px-3 text-sm font-extrabold text-[#061119] transition disabled:border-[#314255] disabled:bg-[#203047] disabled:bg-none disabled:text-[#6f8196]"
-          onClick={onBoot}
-          disabled={vmState !== "stopped"}
-        >
-          <Play size={17} />
-          {vmState === "stopped" ? "Start VM" : vmState}
-        </button>
-      </section>
+    <section
+      className={`flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border bg-[var(--surface)] panel px-5 py-4 ${
+        isRunning ? "border-[var(--accent)]/50" : "border-[var(--border)]"
+      }`}
+    >
+      <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[var(--surface-sunken)] text-[var(--text-muted)]">
+        <Server size={20} />
+      </span>
 
-      <section className="grid gap-2 rounded-lg border border-[#314255] bg-[#101826] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-        <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 rounded-lg border border-[#314255] bg-[#080d13] p-3">
-          <Server className="row-span-2 text-[#00b8d9]" size={17} />
-          <span className="text-xs text-[#9fb0c4]">Target IP</span>
-          <strong className="text-sm text-[#e7edf5]">{room.targetIp || "local-sim"}</strong>
-        </div>
-        <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 rounded-lg border border-[#314255] bg-[#080d13] p-3">
-          <Cpu className="row-span-2 text-[#00b8d9]" size={17} />
-          <span className="text-xs text-[#9fb0c4]">Surface</span>
-          <strong className="text-sm text-[#e7edf5]">{surface}</strong>
-        </div>
-        <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 rounded-lg border border-[#314255] bg-[#080d13] p-3">
-          <Network className="row-span-2 text-[#00b8d9]" size={17} />
-          <span className="text-xs text-[#9fb0c4]">Services</span>
-          <strong className="text-sm text-[#e7edf5]">{exposedServices}</strong>
-        </div>
-        <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 rounded-lg border border-[#314255] bg-[#080d13] p-3">
-          <Clock className="row-span-2 text-[#00b8d9]" size={17} />
-          <span className="text-xs text-[#9fb0c4]">Estimate</span>
-          <strong className="text-sm text-[#e7edf5]">20 min</strong>
-        </div>
-        <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 rounded-lg border border-[#314255] bg-[#080d13] p-3">
-          <Database className="row-span-2 text-[#00b8d9]" size={17} />
-          <span className="text-xs text-[#9fb0c4]">Artifacts</span>
-          <strong className="text-sm text-[#e7edf5]">{artifacts}</strong>
-        </div>
-      </section>
-    </aside>
+      <div className="min-w-0">
+        <span className="block label-mono text-[var(--text-faint)]">Target machine</span>
+        <span className="mt-0.5 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
+          <span className={`size-2 rounded-full ${isBooting ? "animate-pulse" : ""}`} style={{ background: dotColor }} />
+          {stateLabel[vmState]}
+        </span>
+      </div>
+
+      <div className="min-w-0">
+        <span className="block label-mono text-[var(--text-faint)]">IP address</span>
+        <span className="mt-0.5 block font-mono text-sm text-[var(--text)]">
+          {isRunning ? room.targetIp || "local-sim" : "—"}
+        </span>
+      </div>
+
+      <div className="ml-auto">
+        {isRunning ? (
+          <button type="button" className="button" onClick={onStop}>
+            <Square size={13} fill="currentColor" className="text-[var(--danger)]" />
+            Stop machine
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="button primary-button disabled:cursor-wait"
+            onClick={onBoot}
+            disabled={isBooting}
+          >
+            {isBooting ? <Loader2 size={16} className="animate-spin" /> : <Play size={15} fill="currentColor" />}
+            {isBooting ? "Starting..." : "Start machine"}
+          </button>
+        )}
+      </div>
+    </section>
   );
 }

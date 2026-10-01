@@ -5,7 +5,7 @@ const logColor = {
   err: "text-[#ff8fa1]",
   in: "text-[#e7edf5]",
   out: "text-[#9fb0c4]",
-  sys: "text-[#7de8ff]",
+  sys: "text-[#9fef00]",
 };
 
 export function TerminalView({
@@ -29,12 +29,12 @@ export function TerminalView({
 
   return (
     <section
-      className="flex min-h-[420px] min-w-0 flex-col overflow-hidden rounded-lg border border-[#314255] bg-[#080d13] shadow-[0_18px_48px_rgba(0,0,0,0.28)] md:min-h-[640px]"
+      className="flex h-[380px] min-w-0 flex-col overflow-hidden rounded-xl border border-[#273449] bg-[#0b111b] xl:h-[calc(100vh-120px)] xl:max-h-[760px]"
       onClick={() => inputRef.current?.focus()}
     >
-      <header className="flex min-h-11 items-center justify-between border-b border-[#314255] bg-[#101826] px-3.5">
+      <header className="flex min-h-11 items-center justify-between border-b border-[#273449] bg-[#141d2b] px-3.5">
         <div className="flex items-center gap-2 text-sm font-semibold text-[#e7edf5]">
-          <Terminal className="text-[#00b8d9]" size={16} />
+          <Terminal className="text-[#9fef00]" size={16} />
           <span>{prompt}</span>
         </div>
         <div className="flex items-center gap-1.5" aria-hidden="true">
@@ -44,8 +44,8 @@ export function TerminalView({
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-[#1d2a38] bg-[#0c121b] px-3.5 py-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-[#7de8ff]">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[#1d2838] bg-[#111927] px-3.5 py-2">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-[#9fef00]">
           <Sparkles size={13} />
           Suggested
         </span>
@@ -53,7 +53,7 @@ export function TerminalView({
           <button
             key={suggestion}
             type="button"
-            className="max-w-full truncate rounded-md border border-[#314255] bg-[#101826] px-2.5 py-1 font-mono text-xs text-[#e7edf5] transition hover:border-[#00b8d9] hover:text-[#7de8ff] disabled:cursor-not-allowed disabled:opacity-45"
+            className="max-w-full truncate rounded-md border border-[#273449] bg-[#141d2b] px-2.5 py-1 font-mono text-xs text-[#e7edf5] transition hover:border-[#9fef00] hover:text-[#9fef00] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={disabled}
             onClick={() => onUseSuggestion?.(suggestion)}
             title={suggestion}
@@ -70,14 +70,14 @@ export function TerminalView({
         aria-live="polite"
       >
         {disabled && (
-          <div className="mb-3 rounded-lg border border-[#314255] bg-[#101826] px-3 py-2 font-sans text-sm text-[#9fb0c4]">
-            Target offline. Start the VM to enable command input.
+          <div className="mb-3 rounded-lg border border-[#273449] bg-[#141d2b] px-3 py-2 font-sans text-sm text-[#9fb0c4]">
+            Machine offline. Start the target machine to use the terminal.
           </div>
         )}
         {logs.map((log, index) => (
           <div
             key={`${index}-${log.msg}`}
-            className={`grid grid-cols-[1.2rem_minmax(0,1fr)] gap-2 ${logColor[log.type] || logColor.out}`}
+            className={`log-line grid grid-cols-[1.2rem_minmax(0,1fr)] gap-2 ${logColor[log.type] || logColor.out}`}
           >
             <span className="select-none text-[#6f8196]">{log.type === "in" ? "$" : ">"}</span>
             <p className="m-0 whitespace-pre-wrap break-words">{log.msg}</p>
@@ -86,10 +86,10 @@ export function TerminalView({
       </div>
 
       <form
-        className="flex min-h-12 items-center gap-2 border-t border-[#314255] bg-[#101826] px-4 font-mono text-sm"
+        className="flex min-h-12 items-center gap-2 border-t border-[#273449] bg-[#141d2b] px-4 font-mono text-sm"
         onSubmit={onSubmit}
       >
-        <span className="text-[#00b8d9]">{disabled ? "#" : "$"}</span>
+        <span className="text-[#9fef00]">{disabled ? "#" : "$"}</span>
         <input
           className="min-w-0 flex-1 border-0 bg-transparent text-[#e7edf5] outline-none disabled:text-[#6f8196]"
           ref={inputRef}
@@ -99,7 +99,7 @@ export function TerminalView({
           spellCheck="false"
           autoCapitalize="none"
           autoComplete="off"
-          aria-label="Commande terminal"
+          aria-label="Terminal command"
         />
         {disabled ? (
           <Lock className="text-[#6f8196]" size={15} />

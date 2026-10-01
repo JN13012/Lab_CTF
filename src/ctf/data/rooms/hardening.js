@@ -1,7 +1,7 @@
 export const hardening = {
   id: "hardening",
   order: 9,
-  title: "Hardening Final",
+  title: "Final Hardening",
   category: "Defense",
   difficulty: "Hard",
   flag: "LockBit",

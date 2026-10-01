@@ -1,159 +1,235 @@
-import { ShieldCheck } from "lucide-react";
-import { genericLabImage, roomImages } from "../../assets/images";
+import { useState } from "react";
+import { Check, CheckCircle2, ChevronDown, Info, Lightbulb, Server, XCircle } from "lucide-react";
 import { TagChip } from "../../components/ui/TagChip";
-import { challenges } from "../../ctf/data";
-import { getMethodology, trainingModes } from "../../ctf/selectors";
+import { getRoomPoints, getRoomTasks, isQuestionAnswered, isTaskDone } from "../../ctf/selectors";
 
-export function TaskPanel({
-  room,
-  runtime,
-  roomStats,
-  note,
-  trainingMode,
-  completedCount,
-  onTrainingModeChange,
-  onRevealHint,
-  onNotesChange,
-  onClearLogs,
-  onReset,
-}) {
-  const isChallengeMode = trainingMode === "challenge";
-  const hintVisible = !isChallengeMode && roomStats.hints > 0;
+function Block({ block }) {
+  if (block.type === "code") return <pre className="font-mono">{block.text}</pre>;
+  if (block.type === "list") {
+    return (
+      <ul>
+        {block.items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    );
+  }
+  if (block.type === "note") {
+    return (
+      <div className="mb-3 flex gap-2 rounded-lg border border-[var(--info)]/30 bg-[var(--info-soft)] px-3 py-2.5 text-sm text-[var(--info)]">
+        <Info size={16} className="mt-0.5 shrink-0" />
+        {block.text}
+      </div>
+    );
+  }
+  return <p>{block.text}</p>;
+}
+
+function Question({ question, answered, machineOnline, onAnswer }) {
+  const [value, setValue] = useState("");
+  const [feedback, setFeedback] = useState(null);
+
+  if (question.kind === "ack") {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[var(--surface-sunken)] px-3 py-2.5">
+        <span className="text-sm text-[var(--text-body)]">{question.prompt}</span>
+        {answered ? (
+          <span className="button button-validated min-h-8 px-3 text-xs">
+            <Check size={14} strokeWidth={3} />
+            Completed
+          </span>
+        ) : (
+          <button type="button" className="button min-h-8 px-3 text-xs" onClick={() => onAnswer(question)}>
+            Complete
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const submit = (event) => {
+    event.preventDefault();
+    if (!value.trim()) {
+      setFeedback("empty");
+      return;
+    }
+    const correct = onAnswer(question, value);
+    setFeedback(correct ? null : "wrong");
+  };
 
   return (
-    <aside className="grid gap-4">
-      <section className="overflow-hidden rounded-lg border border-[#314255] bg-[#101826] shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-        <div className="relative h-36">
-          <img
-            className="size-full object-cover"
-            src={roomImages[room.id] || genericLabImage}
-            alt=""
-              loading="lazy"
-              decoding="async"
+    <div>
+      <label className="block text-sm text-[var(--text-body)]" htmlFor={`q-${question.id}`}>
+        {question.prompt}
+      </label>
+      {answered ? (
+        <div className="mt-2 flex gap-2">
+          <span className="flex min-w-0 flex-1 items-center rounded-lg border border-[var(--validated)] bg-[var(--validated-soft)] px-3 py-2 font-mono text-sm text-[var(--text)]">
+            <span className="truncate">{question.kind === "flag" ? "FLAG{••••••••}" : question.answer[0]}</span>
+          </span>
+          <span className="button button-validated">
+            <CheckCircle2 size={15} />
+            Correct
+          </span>
+        </div>
+      ) : question.kind === "flag" && !machineOnline ? (
+        <div className="mt-2 flex items-center gap-2 rounded-lg border border-dashed border-[var(--border-strong)] px-3 py-2.5 text-sm text-[var(--text-muted)]">
+          <Server size={15} className="shrink-0" />
+          Start the target machine first to capture the flag.
+        </div>
+      ) : (
+        <form className="mt-2 flex gap-2" onSubmit={submit}>
+          <input
+            id={`q-${question.id}`}
+            className={`min-w-0 flex-1 rounded-lg border bg-[var(--surface-sunken)] px-3 py-2 font-mono text-sm text-[var(--text)] outline-none placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] ${
+              feedback ? "border-[var(--danger)]" : "border-[var(--border)]"
+            }`}
+            value={value}
+            onChange={(event) => {
+              setValue(event.target.value);
+              setFeedback(null);
+            }}
+            placeholder={question.kind === "flag" ? "FLAG{...}" : `Answer format: ${question.format || "***"}`}
+            spellCheck="false"
+            autoComplete="off"
           />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_35%,rgba(0,0,0,0.72))]" />
-        </div>
-        <div className="p-4">
-          <span className="block text-xs font-semibold uppercase tracking-normal text-[#9fb0c4]">
-            Intelligence brief
-          </span>
-          <h2 className="m-0 mt-1 text-xl font-semibold text-[#e7edf5]">{room.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-[#9fb0c4]">{room.scenario}</p>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-[#314255] bg-[#101826] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-        <span className="block text-xs font-semibold uppercase tracking-normal text-[#9fb0c4]">
-          Training mode
-        </span>
-        <div className="mt-3 grid gap-2">
-          {trainingModes.map((mode) => (
-            <button
-              key={mode.id}
-              type="button"
-              className={`rounded-lg border p-3 text-left transition ${
-                trainingMode === mode.id
-                  ? "border-[#00b8d9]/60 bg-[#00b8d9]/10 text-[#e7edf5]"
-                  : "border-[#314255] bg-[#080d13] text-[#9fb0c4] hover:border-[#40566f] hover:bg-[#1a2433]"
-              }`}
-              onClick={() => onTrainingModeChange(mode.id)}
-            >
-              <strong className="block text-sm text-[#e7edf5]">{mode.label}</strong>
-              <span className="mt-1 block text-xs leading-5">{mode.description}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {!isChallengeMode && (
-        <section className="rounded-lg border border-[#314255] bg-[#101826] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-          <span className="block text-xs font-semibold uppercase tracking-normal text-[#9fb0c4]">
-            Methodology
-          </span>
-          <ol className="mt-3 grid list-decimal gap-2 pl-5 text-sm leading-6 text-[#c9d5e3]">
-            {getMethodology(room).map((task) => (
-              <li key={task}>{task}</li>
-            ))}
-          </ol>
-        </section>
+          <button type="submit" className="button">
+            Submit
+          </button>
+        </form>
       )}
+      {feedback === "wrong" && (
+        <p className="m-0 mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-[var(--danger)]">
+          <XCircle size={13} />
+          {question.kind === "flag" ? "Incorrect flag. Keep enumerating." : "Incorrect answer. Try again."}
+        </p>
+      )}
+      {feedback === "empty" && (
+        <p className="m-0 mt-1.5 text-xs font-semibold text-[var(--danger)]">Enter an answer first.</p>
+      )}
+    </div>
+  );
+}
 
-      <section className="rounded-lg border border-[#314255] bg-[#101826] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-        <span className="block text-xs font-semibold uppercase tracking-normal text-[#9fb0c4]">
-          Hints
+function TaskCard({ index, task, done, defaultOpen, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section
+      className={`overflow-hidden rounded-xl border bg-[var(--surface)] panel ${
+        done ? "border-[var(--validated)]/40" : "border-[var(--border)]"
+      }`}
+    >
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-[var(--surface-hover)]"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+      >
+        <span
+          className={`grid size-8 shrink-0 place-items-center rounded-md text-xs font-bold ${
+            done ? "bg-[var(--validated)] text-[var(--on-accent)]" : "bg-[var(--surface-sunken)] text-[var(--text-muted)]"
+          }`}
+        >
+          {done ? <Check size={16} strokeWidth={3} /> : index}
         </span>
-        {isChallengeMode ? (
-          <p className="mt-2 text-sm leading-6 text-[#9fb0c4]">Hints are disabled in challenge mode.</p>
-        ) : hintVisible ? (
+        <span className="min-w-0 flex-1">
+          <span className="block label-mono text-[var(--text-faint)]">
+            Task {index}
+          </span>
+          <strong className="block truncate text-[15px] font-semibold text-[var(--text)]">{task.title}</strong>
+        </span>
+        {task.machine && (
+          <span className="hidden items-center gap-1 rounded-md bg-[var(--surface-sunken)] px-2 py-1 text-[11px] font-semibold text-[var(--text-muted)] sm:inline-flex">
+            <Server size={12} />
+            Requires machine
+          </span>
+        )}
+        <ChevronDown size={18} className={`shrink-0 text-[var(--text-faint)] transition ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="reveal border-t border-[var(--border)] px-5 py-5">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function TaskPanel({ room, runtime, vmState, roomStats, note, onRevealHint, onNotesChange, onAnswerQuestion }) {
+  const tasks = getRoomTasks(room);
+  const firstOpen = tasks.findIndex((task) => !isTaskDone(runtime, room, task));
+  const hintVisible = roomStats.hints > 0;
+
+  return (
+    <div className="grid content-start gap-3">
+      {tasks.map((task, index) => (
+        <TaskCard
+          key={`${room.id}-${task.id}`}
+          index={index + 1}
+          task={task}
+          done={isTaskDone(runtime, room, task)}
+          defaultOpen={index === (firstOpen === -1 ? 0 : firstOpen)}
+        >
+          <div className="task-body">
+            {task.body.map((block, blockIndex) => (
+              <Block key={blockIndex} block={block} />
+            ))}
+          </div>
+          <div className="mt-4 border-t border-[var(--border)] pt-4">
+            <span className="kicker">Answer the questions below</span>
+            <div className="mt-3 grid gap-4">
+              {task.questions.map((question) => (
+                <Question
+                  key={`${room.id}-${question.id}`}
+                  question={question}
+                  answered={isQuestionAnswered(runtime, room, question)}
+                  machineOnline={vmState === "running"}
+                  onAnswer={onAnswerQuestion}
+                />
+              ))}
+            </div>
+          </div>
+        </TaskCard>
+      ))}
+
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] panel px-5 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
+            <Lightbulb size={16} className="text-[var(--warning)]" />
+            Need a hint?
+          </span>
+          {!hintVisible && (
+            <button type="button" className="text-sm font-semibold text-[var(--warning)] hover:underline" onClick={onRevealHint}>
+              Show hint
+            </button>
+          )}
+        </div>
+        {hintVisible && (
           <>
-            <p className="mt-2 text-sm leading-6 text-[#c9d5e3]">{room.hint}</p>
+            <p className="m-0 mt-3 text-sm leading-6 text-[var(--text-body)]">{room.hint}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {(room.unlocks.length ? room.unlocks : ["basic shell"]).map((tool) => (
                 <TagChip key={tool}>{tool}</TagChip>
               ))}
             </div>
           </>
-        ) : (
-          <button
-            type="button"
-            className="mt-3 inline-flex min-h-9 items-center justify-center rounded-lg border border-[#314255] bg-[#080d13] px-3 text-sm font-semibold text-[#e7edf5] transition hover:border-[#40566f] hover:bg-[#1a2433]"
-            onClick={onRevealHint}
-          >
-            Reveal hint
-          </button>
         )}
       </section>
 
-      <section className="rounded-lg border border-[#314255] bg-[#101826] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-        <span className="block text-xs font-semibold uppercase tracking-normal text-[#9fb0c4]">
-          Notes
-        </span>
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] panel px-5 py-4">
+        <span className="text-sm font-semibold text-[var(--text)]">Notes</span>
         <textarea
-          className="mt-3 min-h-32 w-full resize-y rounded-lg border border-[#314255] bg-[#080d13] p-3 text-sm leading-6 text-[#e7edf5] outline-none placeholder:text-[#6f8196] focus:border-[#00b8d9]"
+          className="mt-3 min-h-28 w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--surface-sunken)] p-3 font-mono text-sm leading-6 text-[var(--text)] outline-none placeholder:text-[var(--text-faint)] focus:border-[var(--accent)]"
           value={note}
           onChange={(event) => onNotesChange(event.target.value)}
-          placeholder="Commands, findings, credentials, blockers, things to retry..."
+          placeholder="Commands, findings, credentials, things to retry..."
           aria-label="Room notes"
         />
       </section>
 
-      <section className="rounded-lg border border-[#314255] bg-[#101826] p-4 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
-        <div className="grid grid-cols-3 gap-2">
-          <span className="rounded-lg border border-[#314255] bg-[#080d13] px-2 py-2 text-center text-xs text-[#9fb0c4]">{roomStats.commands} cmds</span>
-          <span className="rounded-lg border border-[#314255] bg-[#080d13] px-2 py-2 text-center text-xs text-[#9fb0c4]">{roomStats.hints} hints</span>
-          <span className="rounded-lg border border-[#314255] bg-[#080d13] px-2 py-2 text-center text-xs text-[#9fb0c4]">{roomStats.flagAttempts} flags</span>
-        </div>
-        <button
-          type="button"
-          className="mt-3 inline-flex min-h-9 w-full items-center justify-center rounded-lg border border-[#314255] bg-[#080d13] px-3 text-sm font-semibold text-[#e7edf5] transition hover:border-[#40566f] hover:bg-[#1a2433]"
-          onClick={onClearLogs}
-        >
-          Clear terminal
-        </button>
-        <button
-          type="button"
-          className="mt-2 inline-flex min-h-9 w-full items-center justify-center rounded-lg border border-[#314255] bg-[#080d13] px-3 text-sm font-semibold text-[#ff8fa1] transition hover:border-[#ff3b5c]/60 hover:bg-[#1a2433]"
-          onClick={onReset}
-        >
-          Reset progression
-        </button>
-        <div className="mt-3 rounded-lg border border-[#314255] bg-[#080d13] p-3">
-          <span className="text-xs text-[#9fb0c4]">Global</span>
-          <strong className="my-1.5 block text-[#e7edf5]">{completedCount}/{challenges.length}</strong>
-          <div className="h-1.5 overflow-hidden rounded-full bg-slate-400/20">
-            <span
-              className="block h-full rounded-full bg-[#00b8d9]"
-              style={{ width: `${(completedCount / challenges.length) * 100}%` }}
-            />
-          </div>
-        </div>
-        {runtime.solved && (
-          <div className="mt-3 inline-flex w-full items-center gap-2 rounded-lg border border-[#00d97e]/40 bg-[#00d97e]/10 px-3 py-2 text-sm text-[#00d97e]">
-            <ShieldCheck size={18} />
-            <span>All rooms completed</span>
-          </div>
-        )}
-      </section>
-    </aside>
+      <p className="m-0 text-center text-xs text-[var(--text-faint)]">
+        Completing the final flag awards {getRoomPoints(room)} pts
+      </p>
+    </div>
   );
 }

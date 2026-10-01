@@ -11,12 +11,14 @@ export const baseHardening = {
 
 export const createInitialRuntime = () => ({
   level: 1,
+  activeDomainId: "cyber",
   activeRoomId: "footprinting",
   solved: false,
   completedRooms: [],
   roomStats: {},
   notes: {},
-  trainingMode: "guided",
+  answers: {},
+  completedAt: {},
   remoteSession: null,
   crackedPasswords: {},
   sshLoginPending: null,

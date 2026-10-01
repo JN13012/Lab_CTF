@@ -1,20 +1,8 @@
 import { challenges } from "../data/index.js";
 
-export const trainingModes = [
-  {
-    id: "guided",
-    label: "Guided",
-    description: "Methodology and hints are available.",
-  },
-  {
-    id: "challenge",
-    label: "Challenge",
-    description: "No hints. Solve it with your own methodology.",
-  },
-];
-
 export function getRoomStatus(runtime, challenge) {
   if (!challenge) return "locked";
+  if (challenge.planned) return "soon";
   if (runtime.completedRooms?.includes(challenge.id)) return "completed";
 
   const previousRooms = challenges.filter((room) => room.order < challenge.order);
@@ -26,17 +14,17 @@ export function getRoomStatus(runtime, challenge) {
 }
 
 export function getMethodology(room) {
-  const base = ["Read the scope and objective", "Enumerate before exploiting", "Keep useful notes", "Submit the flag"];
+  const base = ["Read the scope and objective", "Enumerate before acting", "Keep useful notes", "Submit the flag"];
   const byCategory = {
     Recon: ["Identify visible artifacts", "List hidden files", "Document exposed information"],
     Linux: ["List files recursively", "Search by filename", "Search inside file contents"],
-    Network: ["Run service enumeration", "Map exposed ports", "Validate interesting services"],
-    Web: ["Map endpoints", "Test authentication flow", "Confirm injection safely"],
-    Cracking: ["Identify hash material", "Crack credentials", "Validate access path"],
-    Exploitation: ["Confirm vulnerable service", "Select exploit path", "Escalate and verify privileges"],
-    SOC: ["Query event volume", "Pivot on suspicious telemetry", "Extract attacker indicator"],
+    Network: ["Enumerate services", "Map exposed ports", "Validate interesting services"],
+    Web: ["Map the endpoints", "Test the authentication flow", "Confirm the finding without impact"],
+    Cracking: ["Identify recovered hashes", "Recover credentials", "Validate the access path"],
+    Exploitation: ["Confirm the vulnerable service", "Pick the right approach", "Verify the privileges obtained"],
+    SOC: ["Measure event volume", "Pivot on suspicious telemetry", "Extract the attacker indicator"],
     "Incident Response": ["Inspect suspicious artifacts", "Map process to connection", "Contain persistence"],
-    Defense: ["Reduce exposed services", "Apply WAF controls", "Deploy detection policy"],
+    Defense: ["Reduce exposed services", "Apply WAF rules", "Deploy the detection policy"],
   };
 
   return byCategory[room.category] || base;

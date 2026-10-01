@@ -1,7 +1,7 @@
 export const forensic = {
   id: "forensic",
   order: 8,
-  title: "Forensic",
+  title: "Forensic Investigation",
   category: "Incident Response",
   difficulty: "Medium",
   flag: "NotPetya",

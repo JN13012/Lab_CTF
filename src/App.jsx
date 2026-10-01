@@ -1,24 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { runCommand } from "./ctf/terminal/terminalEngine";
 import { bootLogs, createInitialRuntime } from "./ctf/runtime";
-import {
-  challenges,
-  domainCatalog,
-  getChallengeById,
-  getChallengeByOrder,
-} from "./ctf/data";
-import {
-  getCurrentRoomStats,
-  getDomainForRoom,
-  getRoomStatus,
-} from "./ctf/selectors";
+import { challenges, getChallengeById, getChallengeByOrder, getDomainById } from "./ctf/data";
+import { checkAnswer, getCurrentRoomStats, getRoomStatus } from "./ctf/selectors";
 import { labLogo } from "./assets/images";
 import { capLogs, clearSavedState, loadSavedState, saveState } from "./app/storage";
-import { AppHeader } from "./components/layout/AppHeader";
-import { Sidebar } from "./components/layout/Sidebar";
+import { PageHeader } from "./components/layout/PageHeader";
 import { Toast } from "./components/layout/Toast";
+import { TopNav } from "./components/layout/TopNav";
 import { ViewRenderer } from "./router/ViewRenderer";
-import { viewTitles } from "./router/views";
+import { viewKickers, viewTitles } from "./router/views";
 
 function App() {
   const saved = loadSavedState();
@@ -35,23 +26,24 @@ function App() {
         .filter((challenge) => challenge.order < (saved.runtime.level || 1))
         .map((challenge) => challenge.id);
 
+    const savedRuntime = { ...saved.runtime };
+    delete savedRuntime["training" + "Mode"];
+
     return {
       ...createInitialRuntime(),
-      ...saved.runtime,
+      ...savedRuntime,
       activeRoomId: migratedActiveRoom,
       completedRooms: migratedCompletedRooms,
       roomStats: saved.runtime.roomStats || {},
       notes: saved.runtime.notes || {},
-      trainingMode: ["guided", "challenge"].includes(saved.runtime.trainingMode)
-        ? saved.runtime.trainingMode
-        : "guided",
+      answers: saved.runtime.answers || {},
+      completedAt: saved.runtime.completedAt || {},
       solved: migratedCompletedRooms.length >= challenges.length,
     };
   });
   const [logs, setLogs] = useState(saved?.logs || bootLogs);
   const [command, setCommand] = useState("");
   const [view, setView] = useState("dashboard");
-  const [selectedDomainId, setSelectedDomainId] = useState(domainCatalog[0].id);
   const [vmState, setVmState] = useState("stopped");
   const [searchQuery, setSearchQuery] = useState("");
   const [returnView, setReturnView] = useState("dashboard");
@@ -76,6 +68,8 @@ function App() {
   );
 
   const viewTitle = view === "room" ? activeRoom.title : viewTitles[view];
+  const viewKicker = viewKickers[view];
+  const activeDomain = getDomainById(runtime.activeDomainId);
 
   useEffect(() => {
     let icon = document.querySelector("link[rel='icon']");
@@ -109,35 +103,21 @@ function App() {
     toastTimeoutRef.current = window.setTimeout(() => setToast(null), 1800);
   };
 
-  const openTrack = (domainId) => {
-    const domain = domainCatalog.find((item) => item.id === domainId);
-    showToast(`Loading ${domain?.title || "learning path"}...`);
-    window.setTimeout(() => {
-      setSelectedDomainId(domainId);
-      setView("track");
-      showToast(`${domain?.title || "Training program"} loaded`, "success");
-    }, 450);
-  };
-
-  const openRoom = (order, mode = "guided", backTarget = mode === "challenge" ? "challenges" : "track") => {
+  const openRoom = (order, backTarget = "tracks") => {
     const room = getChallengeByOrder(order);
     if (!room) return;
 
     if (getRoomStatus(runtime, room) === "locked") {
-      showToast("Complete previous rooms to unlock this room.");
+      showToast("Complete the previous rooms to unlock this one.");
       return;
     }
 
-    const domain = getDomainForRoom(room);
-    showToast(`Preparing room: ${room.title}...`);
+    showToast(`Preparing ${room.title}...`);
 
     window.setTimeout(() => {
-      if (domain) setSelectedDomainId(domain.id);
-
       setRuntime((current) => ({
         ...current,
         activeRoomId: room.id,
-        trainingMode: mode,
         level: order,
         remoteSession: null,
         sshLoginPending: null,
@@ -145,7 +125,7 @@ function App() {
       setLogs([
         ...bootLogs,
         { msg: `Selected room: ${room.title}`, type: "sys" },
-        { msg: "Start the VM to enable the terminal.", type: "sys" },
+        { msg: "Start the target machine to enable the terminal.", type: "sys" },
       ]);
       setCommand("");
       setVmState("stopped");
@@ -159,22 +139,48 @@ function App() {
     if (vmState !== "stopped") return;
 
     setVmState("booting");
-    showToast("Allocating target resources...");
+    showToast("Spawning target machine...");
     setLogs((current) => capLogs([
       ...current,
-      { msg: "[*] allocating target resources...", type: "sys" },
+      { msg: "[*] starting target machine...", type: "sys" },
       { msg: `[*] loading image: ${activeRoom.id}`, type: "sys" },
     ]));
 
     window.setTimeout(() => {
-      showToast(`Target ready: ${activeRoom.targetIp || "local-sim"}`, "success");
+      showToast(`Target online: ${activeRoom.targetIp || "local-sim"}`, "success");
       setVmState("running");
       setLogs((current) => capLogs([
         ...current,
-        { msg: `[+] VM ready: ${activeRoom.targetIp || "local-sim"}`, type: "sys" },
+        { msg: `[+] Target machine online: ${activeRoom.targetIp || "local-sim"}`, type: "sys" },
         { msg: "TYPE 'help' TO START THE CHALLENGE.", type: "sys" },
       ]));
     }, 1200);
+  };
+
+  const stopVm = () => {
+    if (vmState !== "running") return;
+
+    setVmState("stopped");
+    setRuntime((current) => ({ ...current, remoteSession: null, sshLoginPending: null }));
+    setLogs((current) => capLogs([...current, { msg: "[*] target machine stopped.", type: "sys" }]));
+    showToast("Target machine stopped");
+  };
+
+  const executeCommand = (value) => {
+    const result = runCommand(runtime, value);
+    const solved = (result.next.completedRooms?.length || 0) > completedCount;
+    setRuntime(
+      solved
+        ? {
+            ...result.next,
+            completedAt: { ...(result.next.completedAt || {}), [activeRoom.id]: new Date().toISOString() },
+          }
+        : result.next,
+    );
+    appendLogs(result.logs);
+
+    if (solved) showToast(`${activeRoom.title} completed`, "success");
+    return solved;
   };
 
   const handleSubmit = (event) => {
@@ -182,27 +188,32 @@ function App() {
     const value = command.trim();
     if (!value) return;
 
-    const previousCompletedCount = completedCount;
-    const result = runCommand(runtime, value);
-    setRuntime(result.next);
-    appendLogs(result.logs);
+    executeCommand(value);
     setCommand("");
-
-    if ((result.next.completedRooms?.length || 0) > previousCompletedCount) {
-      showToast(`${activeRoom.title} completed`, "success");
-    }
   };
 
-  const updateTrainingMode = (mode) => {
-    setRuntime((current) => ({
-      ...current,
-      trainingMode: mode,
-    }));
+  const submitFlag = (value) => {
+    const candidate = value.trim();
+    if (!candidate) return false;
+    return executeCommand(`submit ${candidate}`);
+  };
+
+  const answerQuestion = (question, value = "") => {
+    if (question.kind === "flag") return submitFlag(value);
+    if (question.kind !== "ack" && !checkAnswer(question, value)) return false;
+
+    setRuntime((current) => {
+      const answered = current.answers?.[activeRoom.id] || [];
+      if (answered.includes(question.id)) return current;
+      return {
+        ...current,
+        answers: { ...(current.answers || {}), [activeRoom.id]: [...answered, question.id] },
+      };
+    });
+    return true;
   };
 
   const revealHint = () => {
-    if (runtime.trainingMode === "challenge") return;
-
     setRuntime((current) => {
       const stats = getCurrentRoomStats(current, activeRoom.id);
       return {
@@ -229,44 +240,47 @@ function App() {
     }));
   };
 
+  const selectDomain = (domainId) => {
+    const domain = getDomainById(domainId);
+    if (!domain.available || domain.id === runtime.activeDomainId) return;
+    setRuntime((current) => ({ ...current, activeDomainId: domain.id }));
+    setView("dashboard");
+    showToast(`Switched to ${domain.title}`, "success");
+  };
+
   const resetLab = () => {
     const confirmed = window.confirm("Reset all progress and terminal history?");
     if (!confirmed) return;
 
-    const fresh = createInitialRuntime();
-    setRuntime(fresh);
+    setRuntime(createInitialRuntime());
     setLogs(bootLogs);
     setCommand("");
     setView("dashboard");
     setVmState("stopped");
     setReturnView("dashboard");
     setSearchQuery("");
-    setSelectedDomainId(domainCatalog[0].id);
     clearSavedState();
   };
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" style={{ "--accent": activeDomain.accent }}>
       <Toast toast={toast} />
-      <Sidebar
+      <TopNav
         view={view}
+        runtime={runtime}
+        activeDomainId={activeDomain.id}
+        searchQuery={searchQuery}
         onNavigate={setView}
-        completedCount={completedCount}
+        onSelectDomain={selectDomain}
+        onSearchChange={setSearchQuery}
       />
       <div className="content-shell">
-        <AppHeader
-          viewTitle={viewTitle}
-          runtime={runtime}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onReset={resetLab}
-        />
+        {!["room", "dashboard"].includes(view) && <PageHeader kicker={viewKicker} title={viewTitle} />}
+        <div key={`${activeDomain.id}-${view === "room" ? activeRoom.id : view}`} className="view-enter">
         <ViewRenderer
           view={view}
           runtime={runtime}
-          completedCount={completedCount}
           searchQuery={searchQuery}
-          selectedDomainId={selectedDomainId}
           activeRoom={activeRoom}
           activeRoomStats={activeRoomStats}
           activeRoomNote={activeRoomNote}
@@ -276,18 +290,17 @@ function App() {
           vmState={vmState}
           returnView={returnView}
           onSetView={setView}
-          onSelectDomain={setSelectedDomainId}
-          onOpenTrack={openTrack}
           onOpenRoom={openRoom}
           onBoot={bootVm}
-          onTrainingModeChange={updateTrainingMode}
+          onStopVm={stopVm}
           onRevealHint={revealHint}
           onNotesChange={updateRoomNotes}
           onCommandChange={setCommand}
           onCommandSubmit={handleSubmit}
-          onClearLogs={() => setLogs(bootLogs)}
+          onAnswerQuestion={answerQuestion}
           onReset={resetLab}
         />
+        </div>
       </div>
     </main>
   );
